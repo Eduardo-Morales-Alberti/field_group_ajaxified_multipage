@@ -1,1 +1,6 @@
 name = Field Group Ajaxified Multipage
+description = Turns javascript multipage groups to ajaxified version
+package = Fields
+version = "7.x-1.0"
+core = 7.x
+dependencies[] = field_group
