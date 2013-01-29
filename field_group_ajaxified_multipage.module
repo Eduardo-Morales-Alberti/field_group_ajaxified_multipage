@@ -134,13 +134,13 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
   if (isset($form['#groups'])) {
     $groups = array();
     $page_group = NULL;
-    foreach ($form['#groups'] as $key => $group) {
-      if (is_object($group)) {
+    foreach ($form['#groups'] as $key => $_group) {
+      if (is_object($_group)) {
         $_group = array(
-          'format_type' => $group->format_type,
-          'label' => $group->label,
-          'format_settings' => $group->format_settings,
-          'children' => $group->children
+          'format_type' => $_group->format_type,
+          'label' => $_group->label,
+          'format_settings' => $_group->format_settings,
+          'children' => $_group->children
         );
       }
       if (is_array($_group)) {
