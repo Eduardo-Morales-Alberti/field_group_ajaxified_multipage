@@ -125,6 +125,7 @@ function field_group_ajaxified_multipage_field_group_format_settings($group) {
  * @param bool $no_js_use
  */
 function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_id, $no_js_use = FALSE) {
+
   #--(Begin)--> Check form array to see if it has multipage group
   $is_multi_page = FALSE;
   $page_group = array();
@@ -132,15 +133,22 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
     $form['#groups'] = $form['#groups_custom'];
   }
   if (isset($form['#groups'])) {
+    $a_group = reset($form['#groups']);
+  }
+  if (isset($a_group))
+  if (is_array($a_group) || is_object($a_group)) {
     $groups = array();
     $page_group = NULL;
+    $steps_order = array();
     foreach ($form['#groups'] as $key => $_group) {
       if (is_object($_group)) {
         $_group = array(
+          'name' => $key,
           'format_type' => $_group->format_type,
           'label' => $_group->label,
           'format_settings' => $_group->format_settings,
-          'children' => $_group->children
+          'children' => $_group->children,
+          'weight' => $_group->weight
         );
       }
       if (is_array($_group)) {
@@ -153,6 +161,29 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
     }
     $form_state['field_group_ajaxified_multipage_enabled'] = $is_multi_page;
     $form_state['field_group_ajaxified_multipage_group'] = $page_group;
+
+    #--(Begin)--> Sort groups by weight
+    if (!function_exists('__fitlife_diet_plan__sort_field_groups_by_weight')) {
+      global $__fitlife_diet_plan__sort_field_groups_by_weight_groups;
+      $__fitlife_diet_plan__sort_field_groups_by_weight_groups = $groups;
+      function __fitlife_diet_plan__sort_field_groups_by_weight($a, $b)
+      {
+        global $__fitlife_diet_plan__sort_field_groups_by_weight_groups;
+
+        if (is_array($a)) {
+          return $a['weight'] > $b['weight'];
+        } elseif (is_object($a)) {
+          return $a->weight > $b->weight;
+        } else {
+          return $__fitlife_diet_plan__sort_field_groups_by_weight_groups[$a]['weight'] > $__fitlife_diet_plan__sort_field_groups_by_weight_groups[$b]['weight'];
+        }
+      }
+    }
+    uasort($form['#groups'], '__fitlife_diet_plan__sort_field_groups_by_weight');
+    usort($page_group['children'], '__fitlife_diet_plan__sort_field_groups_by_weight');
+    usort($form['#groups'][$page_group['name']]->children, '__fitlife_diet_plan__sort_field_groups_by_weight');
+    uasort($groups, '__fitlife_diet_plan__sort_field_groups_by_weight');
+    #--(End)--> Sort groups by weight
   }
   #--(End)--> Check form array to see if it has multipage group
 
@@ -281,7 +312,14 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
     #--(End)--> Add navigation buttons
 
     #--(Begin)--> Display submit button on the last step
+    if (!isset($form['actions']['submit']['#submit'])) {
+      $form['actions']['submit']['#submit'] = array();
+    }
+    if (!is_array($form['actions']['submit']['#submit'])) {
+      $form['actions']['submit']['#submit'] = array();
+    }
     $form['actions']['submit']['#submit'] = array_merge(array('_field_group_ajaxified_multipage_form_submit') , $form['actions']['submit']['#submit']);
+
     if ($step != count($page_group['children']) && $page_group['format_settings']['instance_settings']['move_button']) {
       unset($form['actions']['submit']);
       unset($form['actions']['preview']);
