@@ -42,6 +42,15 @@ function hook_form_alter(&$form, &$form_state, $form_id) {
   if ($form_state['field_group_ajaxified_multipage_enabled']) {
     $step = empty($form_state['storage']['field_group_ajaxified_multipage_step']) ? 1 : $form_state['storage']['field_group_ajaxified_multipage_step'];
     $page_group = $form_state['field_group_ajaxified_multipage_group'];
+
+    //Best practive for accessing variables, it works even when this ajax grouping is disabled
+    if (isset($form_state['values'])) {
+      $values = $form_state['values'];
+      if (isset($form_state['field_group_ajaxified_multipage_enabled']) && isset($form_state['storage']['all']['values'])) {
+        $values = $form_state['storage']['all']['values'];
+      }
+    }
+
     if ($page_group['children'][$step-1] == 'group_two') {
       $form['actions']['skip'] = $form['actions']['next'];
       $form['actions']['skip']['#value'] = t('Skip this step');
@@ -100,6 +109,12 @@ function myform() {
     );
 }
 ?>
+
+Skip button : You can add skip button for any of the steps you like, simply clone the next button added by this module and change it's title to t('Skip this step')
+
+USAGE
+============
+FORM API image buttons are not supported by diffault
 
 DEVELOPERS
 ===========
