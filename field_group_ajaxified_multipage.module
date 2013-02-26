@@ -159,36 +159,37 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
         $groups[$key] = $_group;
       }
     }
+  }
+  #--(End)--> Check form array to see if it has multipage group
+
+  #--(Begin)--> Ajaxify multipage group
+  if ($is_multi_page) {
     $form_state['field_group_ajaxified_multipage_enabled'] = $is_multi_page;
     $form_state['field_group_ajaxified_multipage_group'] = $page_group;
 
     #--(Begin)--> Sort groups by weight
-    if (!function_exists('__fitlife_diet_plan__sort_field_groups_by_weight')) {
-      global $__fitlife_diet_plan__sort_field_groups_by_weight_groups;
-      $__fitlife_diet_plan__sort_field_groups_by_weight_groups = $groups;
-      function __fitlife_diet_plan__sort_field_groups_by_weight($a, $b)
+    if (!function_exists('__field_group_ajaxified_multipage_groups_by_weight')) {
+      global $__field_group_ajaxified_multipage_groups_by_weight_groups;
+      $__field_group_ajaxified_multipage_groups_by_weight_groups = $groups;
+      function __field_group_ajaxified_multipage_groups_by_weight($a, $b)
       {
-        global $__fitlife_diet_plan__sort_field_groups_by_weight_groups;
+        global $__field_group_ajaxified_multipage_groups_by_weight_groups;
 
         if (is_array($a)) {
           return $a['weight'] > $b['weight'];
         } elseif (is_object($a)) {
           return $a->weight > $b->weight;
         } else {
-          return $__fitlife_diet_plan__sort_field_groups_by_weight_groups[$a]['weight'] > $__fitlife_diet_plan__sort_field_groups_by_weight_groups[$b]['weight'];
+          return $__field_group_ajaxified_multipage_groups_by_weight_groups[$a]['weight'] > $__field_group_ajaxified_multipage_groups_by_weight_groups[$b]['weight'];
         }
       }
     }
-    uasort($form['#groups'], '__fitlife_diet_plan__sort_field_groups_by_weight');
-    usort($page_group['children'], '__fitlife_diet_plan__sort_field_groups_by_weight');
-    usort($form['#groups'][$page_group['name']]->children, '__fitlife_diet_plan__sort_field_groups_by_weight');
-    uasort($groups, '__fitlife_diet_plan__sort_field_groups_by_weight');
+    uasort($form['#groups'], '__field_group_ajaxified_multipage_groups_by_weight');
+    usort($page_group['children'], '__field_group_ajaxified_multipage_groups_by_weight');
+    usort($form['#groups'][$page_group['name']]->children, '__field_group_ajaxified_multipage_groups_by_weight');
+    uasort($groups, '__field_group_ajaxified_multipage_groups_by_weight');
     #--(End)--> Sort groups by weight
-  }
-  #--(End)--> Check form array to see if it has multipage group
 
-  #--(Begin)--> Ajaxify multipage group
-  if ($is_multi_page) {
     $wrapper_id = 'form-ajax-wrapper';
     if (isset($form['#id'])) {
       $wrapper_id = $form['#id'] . '-' . $wrapper_id;
@@ -360,16 +361,31 @@ function _field_group_ajaxified_multipage_form_callback($form, $form_state) {
  * button click.
  */
 function _field_group_ajaxified_multipage_form_submit($form, &$form_state) {
+  if (@!isset($form_state['storage']['all']['values'])) {
+    $form_state['storage']['all']['values'] = array();
+  }
+  if (@!isset($form_state['storage']['all']['input'])) {
+    $form_state['storage']['all']['input'] = array();
+  }
 
   // Save away the current information.
   $current_step = 'step' . $form_state['storage']['field_group_ajaxified_multipage_step'];
   if (!empty($form_state['values'])) {
     $form_state['storage']['values'][$current_step] = $form_state['values'];
     $form_state['storage']['input'][$current_step] = $form_state['input'];
-  }
 
+    $form_state['storage']['all']['values'] = array();
+    $form_state['storage']['all']['input'] = array();
+    foreach($form_state['storage']['values'] as $__step_no => $__step_values) {
+      $form_state['storage']['all']['values'] = array_merge($form_state['storage']['all']['values'], $form_state['storage']['values'][$__step_no]);
+      $form_state['storage']['all']['input'] = array_merge($form_state['storage']['all']['input'], $form_state['storage']['input'][$__step_no]);
+      if ($__step_no == $current_step) {
+        break;
+      }
+    }
+  }
   // Increment or decrement the step as needed. Recover values if they exist.
-  if ($form_state['triggering_element']['#value'] == t('Next step')) {
+  if ($form_state['triggering_element']['#value'] == t('Next step') || $form_state['triggering_element']['#value'] == t('Skip this step')) {
     $form_state['storage']['field_group_ajaxified_multipage_step']++;
     // If values have already been entered for this step, recover them from
     // $form_state['storage'] to pre-populate them.
@@ -380,6 +396,14 @@ function _field_group_ajaxified_multipage_form_submit($form, &$form_state) {
     }
   }
   if ($form_state['triggering_element']['#value'] == t('Previous step')) {
+    /**
+     * @todo : when going back to previous step , clear the current step values to start fresh
+     *         when returning back. should be configurable
+     */
+    //$step_name = 'step' . $form_state['storage']['field_group_ajaxified_multipage_step'];
+    //unset($form_state['storage']['values'][$step_name]);
+    //unset($form_state['storage']['input'][$step_name]);
+
     $form_state['storage']['field_group_ajaxified_multipage_step']--;
     // Recover our values from $form_state['storage'] to pre-populate them.
     $step_name = 'step' . $form_state['storage']['field_group_ajaxified_multipage_step'];
@@ -388,7 +412,7 @@ function _field_group_ajaxified_multipage_form_submit($form, &$form_state) {
   }
 
   // If they're done, submit.
-  if ($form_state['triggering_element']['#value'] == $form['actions']['submit']['#value']) {
+  if ($form_state['triggering_element']['#value'] == @$form['actions']['submit']['#value']) {
     $value_message = t('Your information has been submitted:') . ' ';
     foreach ($form_state['storage']['values'] as $step => $values) {
       $form_state['values'] = array_merge($form_state['values'], $values);
