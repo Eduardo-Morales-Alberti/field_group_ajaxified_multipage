@@ -29,6 +29,10 @@ USAGE
 
 - Setup your multipage field groups as usual for your entity/node
 - In your entity/node fields list , edit your multipage field group properties and check Ajaxify option
+- You can also enable only "Non Javascript Multistep" option which does not require javascript to work.
+  It's very useful for debugging purposes or very complex multistep forms.
+  remember that the ajaxify should be disabled for this to work
+- Skip button : You can add skip button for any of the steps you like, simply clone the next button added by this module and change it's title to t('Skip this step')
 
 If you're a developer and like to implement more complex multi page forms you can use the following
 variables
@@ -109,8 +113,6 @@ function myform() {
     );
 }
 ?>
-
-Skip button : You can add skip button for any of the steps you like, simply clone the next button added by this module and change it's title to t('Skip this step')
 
 USAGE
 ============
