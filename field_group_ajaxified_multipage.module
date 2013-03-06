@@ -71,7 +71,7 @@ function field_group_ajaxified_multipage_field_group_formatter_info() {
   return array(
     'form' => array(
       'multipage-group' => array(
-        'instance_settings' => array('ajaxify' => 0),
+        'instance_settings' => array('ajaxify' => 0, 'nonjs_multistep' => 0),
       ),
     ),
   );
@@ -95,7 +95,9 @@ function field_group_ajaxified_multipage_field_group_format_settings($group) {
     if (!isset($group->format_settings['instance_settings']['ajaxify'])) {
       $group->format_settings['instance_settings']['ajaxify'] = FALSE;
     }
-
+    if (!isset($group->format_settings['instance_settings']['nonjs_multistep'])) {
+      $group->format_settings['instance_settings']['nonjs_multistep'] = FALSE;
+    }
     $form = array(
       'instance_settings' => array(
         '#tree' => TRUE,
@@ -103,11 +105,20 @@ function field_group_ajaxified_multipage_field_group_format_settings($group) {
       ),
     );
 
+    $form['instance_settings']['nonjs_multistep'] = array(
+      '#title' => t('Non Javascript Multistep'),
+      '#type' => 'select',
+      '#default_value' => isset($group->format_settings['instance_settings']['nonjs_multistep']) ? $group->format_settings['instance_settings']['nonjs_multistep'] : $formatter['instance_settings']['nonjs_multistep'],
+      '#weight' => 20,
+      '#options' => array(0 => t('No'), 1 => t('Yes')),
+      //'#title_display' => true,
+      '#description' => t('If enabled and ajaxify option is disabled no javascript will be used for form submision or navigration between steps, the form will be refreshed. useful for debugging or very complex multistep forms')
+    );
     $form['instance_settings']['ajaxify'] = array(
       '#title' => t('Ajaxify'),
       '#type' => 'select',
       '#default_value' => isset($group->format_settings['instance_settings']['ajaxify']) ? $group->format_settings['instance_settings']['ajaxify'] : $formatter['instance_settings']['ajaxify'],
-      '#weight' => 20,
+      '#weight' => 21,
       '#options' => array(0 => t('No'), 1 => t('Yes')),
       //'#title_display' => true,
       '#description' => t('If enabled navigation to next/prev pages will be done using ajax instead of simple javascript')
@@ -125,7 +136,6 @@ function field_group_ajaxified_multipage_field_group_format_settings($group) {
  * @param bool $no_js_use
  */
 function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_id, $no_js_use = FALSE) {
-
   #--(Begin)--> Check form array to see if it has multipage group
   $is_multi_page = FALSE;
   $page_group = array();
@@ -152,7 +162,7 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
         );
       }
       if (is_array($_group)) {
-        if ($_group['format_type'] == 'multipage-group' && $_group['format_settings']['instance_settings']['ajaxify'] && empty($page_group)) {
+        if ($_group['format_type'] == 'multipage-group' && ($_group['format_settings']['instance_settings']['ajaxify'] || $_group['format_settings']['instance_settings']['nonjs_multistep']) && empty($page_group)) {
           $is_multi_page = TRUE;
           $page_group = $_group;
         }
@@ -166,6 +176,7 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
   if ($is_multi_page) {
     $form_state['field_group_ajaxified_multipage_enabled'] = $is_multi_page;
     $form_state['field_group_ajaxified_multipage_group'] = $page_group;
+    $form_state['field_group_ajaxified_multipage_complete_form'] = array();
 
     #--(Begin)--> Sort groups by weight
     if (!function_exists('__field_group_ajaxified_multipage_groups_by_weight')) {
@@ -204,6 +215,7 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
     $form_state['storage']['field_group_ajaxified_multipage_step'] = $step;
 
     #--(Begin)--> Convert page group formats to fieldset
+    $form_state['field_group_ajaxified_multipage_complete_form'] = $form;
     $n = 0;
     foreach ($groups as $group_name => $group) {
       if (in_array($group_name, $page_group['children'])) {
@@ -224,6 +236,7 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
     #--(Begin)--> Remove non grouped fields in all other steps except the first one
     if (($step > 1 && !$page_group['format_settings']['instance_settings']['move_additional']) || ($step < count($page_group['children']) && $page_group['format_settings']['instance_settings']['move_additional']) ) {
       foreach ($form as $form_item => $form_item_name) {
+        $form['#field_group_ajaxified_multipage_complete_form'][$form_item] = &$form[$form_item];
         if (is_array($form_item_name)) {
           if (isset($form_item_name['#group'])) {
             if ($form_item_name['#group'] == 'additional_settings') {
@@ -313,13 +326,17 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
     #--(End)--> Add navigation buttons
 
     #--(Begin)--> Display submit button on the last step
-    if (!isset($form['actions']['submit']['#submit'])) {
-      $form['actions']['submit']['#submit'] = array();
+    if (isset($form['#submit'])) {
+      $form['#submit'] = array_merge(array('_field_group_ajaxified_multipage_form_submit') , $form['#submit']);
+    } else {
+      if (!isset($form['actions']['submit']['#submit'])) {
+        $form['actions']['submit']['#submit'] = array();
+      }
+      if (!is_array($form['actions']['submit']['#submit'])) {
+        $form['actions']['submit']['#submit'] = array();
+      }
+      $form['actions']['submit']['#submit'] = array_merge(array('_field_group_ajaxified_multipage_form_submit') , $form['actions']['submit']['#submit']);
     }
-    if (!is_array($form['actions']['submit']['#submit'])) {
-      $form['actions']['submit']['#submit'] = array();
-    }
-    $form['actions']['submit']['#submit'] = array_merge(array('_field_group_ajaxified_multipage_form_submit') , $form['actions']['submit']['#submit']);
 
     if ($step != count($page_group['children']) && $page_group['format_settings']['instance_settings']['move_button']) {
       unset($form['actions']['submit']);
@@ -332,12 +349,24 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
     // element turns off AJAX behaviors on that element and as a result
     // ajax.js doesn't get loaded.
     // For demonstration only! You don't need this.
-    if ($no_js_use) {
+    if ($no_js_use || !@$page_group['format_settings']['instance_settings']['ajaxify']) {
       // Remove the #ajax from the above, so ajax.js won't be loaded.
       // For demonstration only.
       unset($form['next']['#ajax']);
       unset($form['prev']['#ajax']);
+      unset($form['actions']['next']['#ajax']);
+      unset($form['actions']['prev']['#ajax']);
     }
+
+    #--(Begin)--> Some special treatment for stricy form validate functions
+    if (isset($form['#validate'])) {
+      foreach ($form['#validate'] as $_vali_k => $_vali_v) {
+        if ($_vali_v == 'user_account_form_validate') {
+          $form['#validate'][$_vali_k] = '_field_group_ajaxified_multipage_user_account_form_validate';
+        }
+      }
+    }
+    #--(End--> Some special treatment for stricy form validate functions
   }
   #--(Begin)-->  Ajaxify multipage group
 }
@@ -350,6 +379,24 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
  */
 function _field_group_ajaxified_multipage_form_callback($form, $form_state) {
   return $form;
+}
+
+/**
+ * @param $form
+ * @param $form_state
+ */
+function _field_group_ajaxified_multipage_user_account_form_validate($form, &$form_state) {
+  if (!isset($form_state['values']['account'])) {
+    $form_state['values']['account'] = $form_state['storage']['all']['values']['account'];
+    $form['account'] = $form_state['field_group_ajaxified_multipage_complete_form']['account'];
+    //Just for preventing user_account_form_validate from raising error
+    $form['account']['mail']['#parents'] = array('_field_group_ajaxified_multipage_user_account_form_validate');
+  }
+
+  $form_state['values']['mail'] = $form_state['values']['account']['mail'];
+  $form_state['values']['name'] = $form_state['values']['account']['name'];
+
+  return user_account_form_validate($form, $form_state);
 }
 
 
@@ -366,6 +413,10 @@ function _field_group_ajaxified_multipage_form_submit($form, &$form_state) {
   }
   if (@!isset($form_state['storage']['all']['input'])) {
     $form_state['storage']['all']['input'] = array();
+  }
+  $parents_reverse = array();
+  if (isset($form_state['triggering_element'])) {
+    $parents_reverse = array_reverse($form_state['triggering_element']['#parents']);
   }
 
   // Save away the current information.
@@ -384,8 +435,10 @@ function _field_group_ajaxified_multipage_form_submit($form, &$form_state) {
       }
     }
   }
+
   // Increment or decrement the step as needed. Recover values if they exist.
-  if ($form_state['triggering_element']['#value'] == t('Next step') || $form_state['triggering_element']['#value'] == t('Skip this step')) {
+  //if ($form_state['triggering_element']['#value'] == t('Next step') || $form_state['triggering_element']['#value'] == t('Skip this step')) {
+  if ($parents_reverse[1] == 'actions' && ($parents_reverse[0] == 'next' || $parents_reverse[0] == 'skip')) {
     $form_state['storage']['field_group_ajaxified_multipage_step']++;
     // If values have already been entered for this step, recover them from
     // $form_state['storage'] to pre-populate them.
@@ -395,15 +448,11 @@ function _field_group_ajaxified_multipage_form_submit($form, &$form_state) {
       $form_state['input'] = $form_state['storage']['input'][$step_name];
     }
   }
-  if ($form_state['triggering_element']['#value'] == t('Previous step')) {
+  if ($parents_reverse[1] == 'actions' && ($parents_reverse[0] == 'prev')) {
     /**
      * @todo : when going back to previous step , clear the current step values to start fresh
      *         when returning back. should be configurable
      */
-    //$step_name = 'step' . $form_state['storage']['field_group_ajaxified_multipage_step'];
-    //unset($form_state['storage']['values'][$step_name]);
-    //unset($form_state['storage']['input'][$step_name]);
-
     $form_state['storage']['field_group_ajaxified_multipage_step']--;
     // Recover our values from $form_state['storage'] to pre-populate them.
     $step_name = 'step' . $form_state['storage']['field_group_ajaxified_multipage_step'];
@@ -412,16 +461,11 @@ function _field_group_ajaxified_multipage_form_submit($form, &$form_state) {
   }
 
   // If they're done, submit.
-  if ($form_state['triggering_element']['#value'] == @$form['actions']['submit']['#value']) {
+  if ($parents_reverse[1] == 'actions' && ($parents_reverse[0] == 'submit')) {
     $value_message = t('Your information has been submitted:') . ' ';
     foreach ($form_state['storage']['values'] as $step => $values) {
       $form_state['values'] = array_merge($form_state['values'], $values);
-      //$value_message .= "$step: ";
-      //foreach ($values as $key => $value) {
-      //$value_message .= "$key=$value, ";
-      //}
     }
-    //drupal_set_message($value_message);
     $form_state['rebuild'] = FALSE;
     return;
   }
