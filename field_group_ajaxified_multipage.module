@@ -266,6 +266,9 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
         $title = '';
         break;
     }
+    if (!isset($form['#attributes'])) {
+      $form['#attributes'] = array();
+    }
     $output = '<div' . drupal_attributes($form['#attributes']) . '>';
     if (!empty($step_label)) {
       // Always wrap fieldset legends in a SPAN for CSS positioning.
