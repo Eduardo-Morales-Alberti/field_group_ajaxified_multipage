@@ -150,6 +150,7 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
     $groups = array();
     $page_group = NULL;
     $steps_order = array();
+	$n = 0;
     foreach ($form['#groups'] as $key => $_group) {
       if (is_object($_group)) {
         $_group = array(
@@ -162,11 +163,16 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
         );
       }
       if (is_array($_group)) {
+        if (!isset($_group['weight'])) {
+          $_group['weight'] = $n;
+          $form['#groups'][$key]['weight'] = $n;
+        }
         if ($_group['format_type'] == 'multipage-group' && ($_group['format_settings']['instance_settings']['ajaxify'] || $_group['format_settings']['instance_settings']['nonjs_multistep']) && empty($page_group)) {
           $is_multi_page = TRUE;
           $page_group = $_group;
         }
         $groups[$key] = $_group;
+		$n++;
       }
     }
   }
@@ -197,7 +203,9 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
     }
     uasort($form['#groups'], '__field_group_ajaxified_multipage_groups_by_weight');
     usort($page_group['children'], '__field_group_ajaxified_multipage_groups_by_weight');
-    usort($form['#groups'][$page_group['name']]->children, '__field_group_ajaxified_multipage_groups_by_weight');
+	if (!empty($page_group['name'])) {
+      usort($form['#groups'][$page_group['name']]->children, '__field_group_ajaxified_multipage_groups_by_weight');
+	}
     uasort($groups, '__field_group_ajaxified_multipage_groups_by_weight');
     #--(End)--> Sort groups by weight
 
@@ -222,7 +230,11 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
         $n++;
         $group['format_type'] = 'fieldset';
         if (isset($form['#groups'])) {
-          $form['#groups'][$group_name]->format_type = $group['format_type'];
+          if (is_object($form['#groups'][$group_name])) {
+            $form['#groups'][$group_name]->format_type = $group['format_type'];
+          } else {
+            $form['#groups'][$group_name]['format_type'] = $group['format_type'];
+          }
         }
         if ($n != $step) {
           foreach ($group['children'] as $child_name) {
