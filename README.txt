@@ -23,6 +23,20 @@ INSTALLATION
 - Install and enable field_group module
 - Enable the module at Administer >> Modules.
 
+API
+============
+There is a similar hook like hook_form_alter that works the same way, it allows other modules to alter
+the forms that are altered by this module. note that it gets called only when the form is mulipaged using this module
+
+  hook_field_group_ajaxified_multipage_form_alter();
+  hook_field_group_ajaxified_multipage_form_BASE_FORM_ID_alter();
+  hook_field_group_ajaxified_multipage_form_FORM_ID_alter();
+
+/**
+ * Implementation of hook field_group_ajaxified_multipage_form
+ */
+function fgam_example_field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_id) {
+}
 
 USAGE
 ============
@@ -102,6 +116,7 @@ function myform() {
           'label' => 'Steps',
           'instance_settings' => array (
             'ajaxify' => '1',
+            'nonjs_multistep' => '0',
             'classes' => ' group-steps field-group-multipage-group',
             'page_header' => '3',
             'page_counter' => '1',
