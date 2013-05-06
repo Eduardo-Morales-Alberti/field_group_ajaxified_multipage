@@ -367,8 +367,17 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
       }
     }
     #--(End--> Some special treatment for stricy form validate functions
+	
+	#--(Begin)--> Allow thirdparty modules to alter the altered form array
+	$hooks = array('field_group_ajaxified_multipage_form');
+	if (isset($form_state['build_info']['base_form_id'])) {
+	  $hooks[] = 'form_' . $form_state['build_info']['base_form_id'];
+	}
+	$hooks[] = 'field_group_ajaxified_multipage_form_' . $form_id;
+	drupal_alter($hooks, $form, $form_state, $form_id);
+	#--(End)--> Allow thirdparty modules to alter the altered form array
   }
-  #--(Begin)-->  Ajaxify multipage group
+  #--(Begin)--> Ajaxify multipage group
 }
 
 /**
