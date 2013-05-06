@@ -462,6 +462,9 @@ function _field_group_ajaxified_multipage_form_submit($form, &$form_state) {
 
   // Increment or decrement the step as needed. Recover values if they exist.
   //if ($form_state['triggering_element']['#value'] == t('Next step') || $form_state['triggering_element']['#value'] == t('Skip this step')) {
+  if (!isset($parents_reverse[1])) {
+    $parents_reverse[1] = '';
+  }
   if ($parents_reverse[1] == 'actions' && ($parents_reverse[0] == 'next' || $parents_reverse[0] == 'skip')) {
     $form_state['storage']['field_group_ajaxified_multipage_step']++;
     // If values have already been entered for this step, recover them from
