@@ -72,7 +72,7 @@ function field_group_ajaxified_multipage_field_group_formatter_info() {
   return array(
     'form' => array(
       'multipage-group' => array(
-        'instance_settings' => array('ajaxify' => 0, 'nonjs_multistep' => 0),
+        'instance_settings' => array('ajaxify' => 0, 'nonjs_multistep' => 0, 'scroll_top' => 0),
       ),
     ),
   );
@@ -99,6 +99,9 @@ function field_group_ajaxified_multipage_field_group_format_settings($group) {
     if (!isset($group->format_settings['instance_settings']['nonjs_multistep'])) {
       $group->format_settings['instance_settings']['nonjs_multistep'] = FALSE;
     }
+    if (!isset($group->format_settings['instance_settings']['scroll_top'])) {
+      $group->format_settings['instance_settings']['scroll_top'] = FALSE;
+    }
     $form = array(
       'instance_settings' => array(
         '#tree' => TRUE,
@@ -122,6 +125,19 @@ function field_group_ajaxified_multipage_field_group_format_settings($group) {
       '#options' => array(0 => t('No'), 1 => t('Yes')),
       '#description' => t('If enabled navigation to next/prev pages will be done using ajax instead of simple javascript'),
     );
+    $form['instance_settings']['scroll_top'] = array(
+      '#title' => t('Scroll to top'),
+      '#type' => 'select',
+      '#default_value' => isset($group->format_settings['instance_settings']['scroll_top']) ? $group->format_settings['instance_settings']['scroll_top'] : $formatter['instance_settings']['scroll_top'],
+      '#weight' => 22,
+      '#options' => array(0 => t('No'), 1 => t('Yes')),
+      '#description' => t('Scroll to the top of the page on step change.'),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="fields[group_signup][format_settings][settings][instance_settings][ajaxify]"]' => array('value' => 1)
+        )
+      )
+    );
     return $form;
   }
 
@@ -139,6 +155,7 @@ function field_group_ajaxified_multipage_field_group_format_settings($group) {
 function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_id, $no_js_use = FALSE) {
   // Check form array to see if it has multipage group.
   $is_multi_page = FALSE;
+  $scroll_top = FALSE;
   $page_group = array();
   if (isset($form['#groups_custom'])) {
     $form['#groups'] = $form['#groups_custom'];
@@ -170,6 +187,11 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
           if ($_group['format_type'] == 'multipage-group' && ($_group['format_settings']['instance_settings']['ajaxify'] || $_group['format_settings']['instance_settings']['nonjs_multistep']) && empty($page_group)) {
             $is_multi_page = TRUE;
             $page_group = $_group;
+          }
+          if(isset($_group['format_settings']['instance_settings']['scroll_top'])) {
+            if($_group['format_settings']['instance_settings']['scroll_top'] == 1) {
+              $scroll_top = TRUE;
+            }
           }
           $groups[$key] = $_group;
           $n++;
@@ -375,6 +397,11 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
 
     if (isset($form_state['node'])) {
       $form += _field_invoke_default('form', 'node', $form_state['node'], $form, $form_state);
+    }
+
+    // Scroll to top.
+    if($scroll_top) {
+      $form['#attached']['js'][] = drupal_get_path('module', 'field_group_ajaxified_multipage') . '/js/field_group_ajaxified_multipage.js';
     }
 
     // Allow thirdparty modules to alter the altered form array.
