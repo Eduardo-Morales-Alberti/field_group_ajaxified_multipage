@@ -82,7 +82,7 @@ function hook_form_alter(&$form, &$form_state, $form_id) {
 }
 ?>
 
-Sample code for enableling for custom developed forms :
+Sample code for enabling for custom developed forms :
 <?php
 function myform() {
     $form['#groups_custom'] = array (
@@ -131,9 +131,10 @@ function myform() {
 
 USAGE
 ============
-FORM API image buttons are not supported by diffault
+FORM API image buttons are not supported by diffault.
 
 DEVELOPERS
 ===========
 
 Sina Salek (http://sina.salek.ws)
+Sebastian Gurlt (https://www.drupal.org/u/sg88)
