@@ -99,9 +99,21 @@ function field_group_ajaxified_multipage_field_group_format_settings($group) {
     if (!isset($group->format_settings['instance_settings']['nonjs_multistep'])) {
       $group->format_settings['instance_settings']['nonjs_multistep'] = FALSE;
     }
-    if (!isset($group->format_settings['instance_settings']['scroll_top'])) {
-      $group->format_settings['instance_settings']['scroll_top'] = FALSE;
+
+    // Additional options for the ajaxified multistep form.
+    $ajaxified_options = array(
+      'scroll_top',
+      'button_label',
+      'button_label_next',
+      'button_label_prev'
+    );
+
+    foreach($ajaxified_options as $ajaxified_option) {
+      if (!isset($group->format_settings['instance_settings'][$ajaxified_option])) {
+        $group->format_settings['instance_settings'][$ajaxified_option] = FALSE;
+      }
     }
+
     $form = array(
       'instance_settings' => array(
         '#tree' => TRUE,
@@ -138,6 +150,40 @@ function field_group_ajaxified_multipage_field_group_format_settings($group) {
         )
       )
     );
+    $form['instance_settings']['button_label'] = array(
+      '#title' => t('Change button label?'),
+      '#type' => 'checkbox',
+      '#default_value' => isset($group->format_settings['instance_settings']['button_label']) ? $group->format_settings['instance_settings']['button_label'] : $formatter['instance_settings']['button_label'],
+      '#weight' => 23,
+      '#states' => array(
+        'visible' => array(
+          ':input[name="fields[group_signup][format_settings][settings][instance_settings][ajaxify]"]' => array('value' => 1)
+        )
+      )
+    );
+    $form['instance_settings']['button_label_next'] = array(
+      '#title' => t('Next button label'),
+      '#type' => 'textfield',
+      '#default_value' => isset($group->format_settings['instance_settings']['button_label_next']) ? $group->format_settings['instance_settings']['button_label_next'] : $formatter['instance_settings']['button_label_next'],
+      '#weight' => 24,
+      '#states' => array(
+        'visible' => array(
+          ':input[name="fields[group_signup][format_settings][settings][instance_settings][button_label]"]' => array('checked' => TRUE)
+        )
+      )
+    );
+    $form['instance_settings']['button_label_prev'] = array(
+      '#title' => t('Previous button label'),
+      '#type' => 'textfield',
+      '#default_value' => isset($group->format_settings['instance_settings']['button_label_prev']) ? $group->format_settings['instance_settings']['button_label_prev'] : $formatter['instance_settings']['button_label_prev'],
+      '#weight' => 25,
+      '#states' => array(
+        'visible' => array(
+          ':input[name="fields[group_signup][format_settings][settings][instance_settings][button_label]"]' => array('checked' => TRUE)
+        )
+      )
+    );
+
     return $form;
   }
 
@@ -156,7 +202,11 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
   // Check form array to see if it has multipage group.
   $is_multi_page = FALSE;
   $scroll_top = FALSE;
+  $button_label = FALSE;
+  $button_label_next = '';
+  $button_label_prev = '';
   $page_group = array();
+
   if (isset($form['#groups_custom'])) {
     $form['#groups'] = $form['#groups_custom'];
   }
@@ -188,9 +238,20 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
             $is_multi_page = TRUE;
             $page_group = $_group;
           }
+
+          // Scroll Top.
           if(isset($_group['format_settings']['instance_settings']['scroll_top'])) {
             if($_group['format_settings']['instance_settings']['scroll_top'] == 1) {
               $scroll_top = TRUE;
+            }
+          }
+
+          // Button labels.
+          if(isset($_group['format_settings']['instance_settings']['button_label'])) {
+            if ($_group['format_settings']['instance_settings']['button_label'] == 1) {
+              $button_label = TRUE;
+              $button_label_next = t($_group['format_settings']['instance_settings']['button_label_next']);
+              $button_label_prev = t($_group['format_settings']['instance_settings']['button_label_prev']);
             }
           }
           $groups[$key] = $_group;
@@ -332,9 +393,17 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
 
     // Add navigation buttons.
     if ($step < count($page_group['children'])) {
+
+      // Next button label
+      if($button_label) {
+        $next_label = $button_label_next;
+      } else {
+        $next_label = t('Next step');
+      }
+
       $form['actions']['next'] = array(
         '#type' => 'submit',
-        '#value' => t('Next step'),
+        '#value' => $next_label,
         '#validate' => array('_field_group_ajaxified_multipage_form_validate'),
         '#ajax' => array(
           'wrapper' => $wrapper_id,
@@ -344,9 +413,17 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
       );
     }
     if ($step > 1) {
+
+      // Prev button label
+      if($button_label) {
+        $prev_label = $button_label_prev;
+      } else {
+        $prev_label = t("Previous step");
+      }
+
       $form['actions']['prev'] = array(
         '#type' => 'submit',
-        '#value' => t("Previous step"),
+        '#value' => $prev_label,
         // Since all info will be discarded, don't validate on 'prev'.
         '#limit_validation_errors' => array(),
         // #submit is required to use #limit_validation_errors.
