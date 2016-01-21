@@ -72,7 +72,14 @@ function field_group_ajaxified_multipage_field_group_formatter_info() {
   return array(
     'form' => array(
       'multipage-group' => array(
-        'instance_settings' => array('ajaxify' => 0, 'nonjs_multistep' => 0, 'scroll_top' => 0),
+        'instance_settings' => array(
+          'ajaxify' => FALSE,
+          'nonjs_multistep' => FALSE,
+          'scroll_top' => FALSE,
+          'button_label' => FALSE,
+          'button_label_next' => FALSE,
+          'button_label_prev' => FALSE
+        ),
       ),
     ),
   );
@@ -93,49 +100,43 @@ function field_group_ajaxified_multipage_field_group_format_settings($group) {
     $field_group_types = field_group_formatter_info();
     $mode = $group->mode == 'form' ? 'form' : 'display';
     $formatter = $field_group_types[$mode][$group->format_type];
-    if (!isset($group->format_settings['instance_settings']['ajaxify'])) {
-      $group->format_settings['instance_settings']['ajaxify'] = FALSE;
-    }
-    if (!isset($group->format_settings['instance_settings']['nonjs_multistep'])) {
-      $group->format_settings['instance_settings']['nonjs_multistep'] = FALSE;
-    }
 
-    // Additional options for the ajaxified multistep form.
-    $ajaxified_options = array(
-      'scroll_top',
-      'button_label',
-      'button_label_next',
-      'button_label_prev'
-    );
+    // Reset options if ajaxified is disabled.
+    // This is required as if do no do this, he options are still shown in the
+    // field group settings summary.
+    if(!$group->format_settings['instance_settings']['ajaxify']) {
+      $options = array(
+        'nonjs_multistep',
+        'scroll_top',
+        'button_label',
+        'button_label_next',
+        'button_label_prev'
+      );
 
-    foreach($ajaxified_options as $ajaxified_option) {
-      if (!isset($group->format_settings['instance_settings'][$ajaxified_option])) {
-        $group->format_settings['instance_settings'][$ajaxified_option] = FALSE;
+      foreach($options as $option) {
+        unset($group->format_settings['instance_settings'][$option]);
       }
     }
 
-    $form = array(
-      'instance_settings' => array(
-        '#tree' => TRUE,
-        '#weight' => 20,
-      ),
-    );
-
-    $form['instance_settings']['nonjs_multistep'] = array(
-      '#title' => t('Non Javascript Multistep'),
-      '#type' => 'select',
-      '#default_value' => isset($group->format_settings['instance_settings']['nonjs_multistep']) ? $group->format_settings['instance_settings']['nonjs_multistep'] : $formatter['instance_settings']['nonjs_multistep'],
-      '#weight' => 20,
-      '#options' => array(0 => t('No'), 1 => t('Yes')),
-      '#description' => t('If enabled and ajaxify option is disabled no javascript will be used for form submision or navigration between steps, the form will be refreshed. useful for debugging or very complex multistep forms'),
-    );
     $form['instance_settings']['ajaxify'] = array(
       '#title' => t('Ajaxify'),
       '#type' => 'select',
       '#default_value' => isset($group->format_settings['instance_settings']['ajaxify']) ? $group->format_settings['instance_settings']['ajaxify'] : $formatter['instance_settings']['ajaxify'],
-      '#weight' => 21,
+      '#weight' => 20,
       '#options' => array(0 => t('No'), 1 => t('Yes')),
       '#description' => t('If enabled navigation to next/prev pages will be done using ajax instead of simple javascript'),
+    );
+    $form['instance_settings']['nonjs_multistep'] = array(
+      '#title' => t('Non Javascript Multistep'),
+      '#type' => 'select',
+      '#default_value' => isset($group->format_settings['instance_settings']['nonjs_multistep']) ? $group->format_settings['instance_settings']['nonjs_multistep'] : $formatter['instance_settings']['nonjs_multistep'],
+      '#weight' => 21,
+      '#options' => array(0 => t('No'), 1 => t('Yes')),
+      '#description' => t('If enabled and ajaxify option is disabled no javascript will be used for form submision or navigration between steps, the form will be refreshed. useful for debugging or very complex multistep forms'),'#states' => array(
+        'visible' => array(
+          ':input[name="fields[group_signup][format_settings][settings][instance_settings][ajaxify]"]' => array('value' => 1)
+        )
+      )
     );
     $form['instance_settings']['scroll_top'] = array(
       '#title' => t('Scroll to top'),
@@ -168,6 +169,7 @@ function field_group_ajaxified_multipage_field_group_format_settings($group) {
       '#weight' => 24,
       '#states' => array(
         'visible' => array(
+          ':input[name="fields[group_signup][format_settings][settings][instance_settings][ajaxify]"]' => array('value' => 1),
           ':input[name="fields[group_signup][format_settings][settings][instance_settings][button_label]"]' => array('checked' => TRUE)
         )
       )
@@ -179,6 +181,7 @@ function field_group_ajaxified_multipage_field_group_format_settings($group) {
       '#weight' => 25,
       '#states' => array(
         'visible' => array(
+          ':input[name="fields[group_signup][format_settings][settings][instance_settings][ajaxify]"]' => array('value' => 1),
           ':input[name="fields[group_signup][format_settings][settings][instance_settings][button_label]"]' => array('checked' => TRUE)
         )
       )
