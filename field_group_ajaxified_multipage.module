@@ -101,10 +101,22 @@ function field_group_ajaxified_multipage_field_group_format_settings($group) {
     $mode = $group->mode == 'form' ? 'form' : 'display';
     $formatter = $field_group_types[$mode][$group->format_type];
 
+    if(isset($group->format_settings['instance_settings']['ajaxify'])) {
+      $ajaxify = $group->format_settings['instance_settings']['ajaxify'];
+    } else {
+      $ajaxify = $formatter['instance_settings']['ajaxify'];
+    }
+
+    if(isset($group->format_settings['instance_settings']['button_label'])) {
+      $button_label = $group->format_settings['instance_settings']['button_label'];
+    } else {
+      $button_label = $formatter['instance_settings']['button_label'];
+    }
+
     // Reset options if ajaxified is disabled.
     // This is required as if do no do this, he options are still shown in the
     // field group settings summary.
-    if(!$group->format_settings['instance_settings']['ajaxify']) {
+    if(!$ajaxify) {
       $options = array(
         'nonjs_multistep',
         'scroll_top',
@@ -114,14 +126,19 @@ function field_group_ajaxified_multipage_field_group_format_settings($group) {
       );
 
       foreach($options as $option) {
-        unset($group->format_settings['instance_settings'][$option]);
+        $group->format_settings['instance_settings'][$option] = FALSE;
       }
+    }
+
+    if(!$button_label) {
+      $group->format_settings['instance_settings']['button_label_next'] = FALSE;
+      $group->format_settings['instance_settings']['button_label_prev'] = FALSE;
     }
 
     $form['instance_settings']['ajaxify'] = array(
       '#title' => t('Ajaxify'),
       '#type' => 'select',
-      '#default_value' => isset($group->format_settings['instance_settings']['ajaxify']) ? $group->format_settings['instance_settings']['ajaxify'] : $formatter['instance_settings']['ajaxify'],
+      '#default_value' => $ajaxify,
       '#weight' => 20,
       '#options' => array(0 => t('No'), 1 => t('Yes')),
       '#description' => t('If enabled navigation to next/prev pages will be done using ajax instead of simple javascript'),
@@ -154,7 +171,7 @@ function field_group_ajaxified_multipage_field_group_format_settings($group) {
     $form['instance_settings']['button_label'] = array(
       '#title' => t('Change button label?'),
       '#type' => 'checkbox',
-      '#default_value' => isset($group->format_settings['instance_settings']['button_label']) ? $group->format_settings['instance_settings']['button_label'] : $formatter['instance_settings']['button_label'],
+      '#default_value' => $button_label,
       '#weight' => 23,
       '#states' => array(
         'visible' => array(
