@@ -205,7 +205,6 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
   // Check form array to see if it has multipage group.
   $is_multi_page = FALSE;
   $scroll_top = FALSE;
-  $button_label = FALSE;
   $button_label_next = '';
   $button_label_prev = '';
   $page_group = array();
@@ -252,7 +251,6 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
           // Button labels.
           if(isset($_group['format_settings']['instance_settings']['button_label'])) {
             if ($_group['format_settings']['instance_settings']['button_label'] == 1) {
-              $button_label = TRUE;
               $button_label_next = t($_group['format_settings']['instance_settings']['button_label_next']);
               $button_label_prev = t($_group['format_settings']['instance_settings']['button_label_prev']);
             }
@@ -396,17 +394,9 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
 
     // Add navigation buttons.
     if ($step < count($page_group['children'])) {
-
-      // Next button label
-      if($button_label) {
-        $next_label = $button_label_next;
-      } else {
-        $next_label = t('Next step');
-      }
-
       $form['actions']['next'] = array(
         '#type' => 'submit',
-        '#value' => $next_label,
+        '#value' => !empty($button_label_next) ? t($button_label_next) : t("Next step"),
         '#validate' => array('_field_group_ajaxified_multipage_form_validate'),
         '#ajax' => array(
           'wrapper' => $wrapper_id,
@@ -416,17 +406,9 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
       );
     }
     if ($step > 1) {
-
-      // Prev button label
-      if($button_label) {
-        $prev_label = $button_label_prev;
-      } else {
-        $prev_label = t("Previous step");
-      }
-
       $form['actions']['prev'] = array(
         '#type' => 'submit',
-        '#value' => $prev_label,
+        '#value' => !empty($button_label_prev) ? t($button_label_prev) : t("Previous step"),
         // Since all info will be discarded, don't validate on 'prev'.
         '#limit_validation_errors' => array(),
         // #submit is required to use #limit_validation_errors.
