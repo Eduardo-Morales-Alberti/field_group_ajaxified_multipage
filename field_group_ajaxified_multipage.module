@@ -565,6 +565,12 @@ function _field_group_ajaxified_multipage_user_account_form_validate($form, &$fo
  * button click.
  */
 function _field_group_ajaxified_multipage_form_validate($form, &$form_state) {
+  
+  // Take care of the field api validation.
+  $entity = $form['#entity'];
+  $entity_type = $form_state['field_group_ajaxified_multipage_complete_form']['#entity_type'];
+  field_attach_form_validate($entity_type, $entity, $form, $form_state);
+
   if (isset($form_state['node'])) {
 
     // Update node object based on submitted form values.
