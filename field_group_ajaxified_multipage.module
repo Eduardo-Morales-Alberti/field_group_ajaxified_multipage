@@ -317,7 +317,6 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
     }
     $form['#prefix'] = '<div id="' . $wrapper_id . '">';
     $form['#suffix'] = '</div>';
-    $form['#tree'] = TRUE;
 
     // $form_state['storage'] has no specific drupal meaning, but it is
     // traditional to keep variables for multistep forms there.
@@ -465,15 +464,6 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
       unset($form['actions']['prev']['#ajax']);
     }
 
-    // Some special treatment for stricy form validate functions.
-    if (isset($form['#validate'])) {
-      foreach ($form['#validate'] as $_vali_k => $_vali_v) {
-        if ($_vali_v == 'user_account_form_validate') {
-          $form['#validate'][$_vali_k] = '_field_group_ajaxified_multipage_user_account_form_validate';
-        }
-      }
-    }
-
     if (isset($form_state['node'])) {
       $form += _field_invoke_default('form', 'node', $form_state['node'], $form, $form_state);
     }
@@ -538,26 +528,6 @@ function field_group_ajaxified_multipage_ajax_command_scroll_top($selector) {
 }
 
 /**
- *
- * @param $form
- * @param $form_state
- */
-function _field_group_ajaxified_multipage_user_account_form_validate($form, &$form_state) {
-  if (!isset($form_state['values']['account'])) {
-    $form_state['values']['account'] = $form_state['storage']['all']['values']['account'];
-    $form['account'] = $form_state['field_group_ajaxified_multipage_complete_form']['account'];
-
-    //Just for preventing user_account_form_validate from raising error.
-    $form['account']['mail']['#parents'] = array('_field_group_ajaxified_multipage_user_account_form_validate');
-  }
-
-  $form_state['values']['mail'] = $form_state['values']['account']['mail'];
-  $form_state['values']['name'] = $form_state['values']['account']['name'];
-
-  return user_account_form_validate($form, $form_state);
-}
-
-/**
  * validate function for ajaxified form.
  *
  * In AJAX this is only submitted when the final submit button is clicked,
@@ -576,32 +546,9 @@ function _field_group_ajaxified_multipage_form_validate($form, &$form_state) {
     // Update node object based on submitted form values.
     entity_form_submit_build_entity('node', $form_state['node'], $form, $form_state);
   }
-  if (@!isset($form_state['storage']['all']['values'])) {
-    $form_state['storage']['all']['values'] = array();
-  }
-  if (@!isset($form_state['storage']['all']['input'])) {
-    $form_state['storage']['all']['input'] = array();
-  }
   $parents_reverse = array();
   if (isset($form_state['triggering_element'])) {
-    $parents_reverse = array_reverse($form_state['triggering_element']['#parents']);
-  }
-
-  // Save away the current information.
-  $current_step = 'step' . $form_state['storage']['field_group_ajaxified_multipage_step'];
-  if (!empty($form_state['values'])) {
-    $form_state['storage']['values'][$current_step] = $form_state['values'];
-    $form_state['storage']['input'][$current_step] = $form_state['input'];
-
-    $form_state['storage']['all']['values'] = array();
-    $form_state['storage']['all']['input'] = array();
-    foreach ($form_state['storage']['values'] as $__step_no => $__step_values) {
-      $form_state['storage']['all']['values'] = array_merge($form_state['storage']['all']['values'], $form_state['storage']['values'][$__step_no]);
-      $form_state['storage']['all']['input'] = array_merge($form_state['storage']['all']['input'], $form_state['storage']['input'][$__step_no]);
-      if ($__step_no == $current_step) {
-        break;
-      }
-    }
+    $parents_reverse = array_reverse($form_state['triggering_element']['#array_parents']);
   }
 
   // Increment or decrement the step as needed. Recover values if they exist.
@@ -610,21 +557,10 @@ function _field_group_ajaxified_multipage_form_validate($form, &$form_state) {
   }
   if ($parents_reverse[1] == 'actions' && ($parents_reverse[0] == 'next' || $parents_reverse[0] == 'skip')) {
     $form_state['storage']['field_group_ajaxified_multipage_step']++;
-
-    // If values have already been entered for this step, recover them from
-    // $form_state['storage'] to pre-populate them.
-    $step_name = 'step' . $form_state['storage']['field_group_ajaxified_multipage_step'];
-    if (!empty($form_state['storage']['values'][$step_name])) {
-      $form_state['values'] = $form_state['storage']['values'][$step_name];
-      $form_state['input'] = $form_state['storage']['input'][$step_name];
-    }
   }
 
   // If they're done, submit.
   if ($parents_reverse[1] == 'actions' && ($parents_reverse[0] == 'submit')) {
-    foreach ($form_state['storage']['values'] as $step => $values) {
-      $form_state['values'] = array_merge($form_state['values'], $values);
-    }
     $form_state['rebuild'] = FALSE;
     return;
   }
@@ -643,7 +579,7 @@ function _field_group_ajaxified_multipage_form_validate($form, &$form_state) {
 function _field_group_ajaxified_multipage_form_submit($form, &$form_state) {
   $parents_reverse = array();
   if (isset($form_state['triggering_element'])) {
-    $parents_reverse = array_reverse($form_state['triggering_element']['#parents']);
+    $parents_reverse = array_reverse($form_state['triggering_element']['#array_parents']);
   }
   if ($parents_reverse[1] == 'actions' && ($parents_reverse[0] == 'prev')) {
 
@@ -652,18 +588,10 @@ function _field_group_ajaxified_multipage_form_submit($form, &$form_state) {
      *         when returning back. should be configurable
      */
     $form_state['storage']['field_group_ajaxified_multipage_step']--;
-
-    // Recover our values from $form_state['storage'] to pre-populate them.
-    $step_name = 'step' . $form_state['storage']['field_group_ajaxified_multipage_step'];
-    $form_state['values'] = $form_state['storage']['all']['values'];
-    $form_state['input'] = $form_state['storage']['input'][$step_name];
   }
 
   // If they're done, submit.
   if ($parents_reverse[1] == 'actions' && ($parents_reverse[0] == 'submit')) {
-    foreach ($form_state['storage']['values'] as $step => $values) {
-      $form_state['values'] = array_merge($form_state['values'], $values);
-    }
     $form_state['rebuild'] = FALSE;
     return;
   }
@@ -690,11 +618,7 @@ function _field_group_ajaxified_multipage_field_unset($children, &$form) {
 
     }
     else {
-      // locale_field_node_form_submit() looks for field language
-      // information in a hard-coded part of $form.
-      // @todo Other modules may as well, so would be best to move form
-      // elements within #pre_render rather than in hook_form_alter().
-      $form[$child_name] = array('#language' => NULL);
+      $form[$child_name]['#access'] = FALSE;
     }
   }
 }
