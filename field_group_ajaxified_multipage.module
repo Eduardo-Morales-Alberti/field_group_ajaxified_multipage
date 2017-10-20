@@ -516,6 +516,33 @@ function _field_group_ajaxified_multipage_form_submit($form, &$form_state) {
 }
 
 /**
+ * Hides field groups including children in a render array.
+ *
+ * @param array $element
+ *   A render array. Can be a form, node, user, ...
+ * @param array $group_names
+ *   An array of field group names that should be hidden.
+ */
+function _field_group_ajaxified_multipage_hide_field_groups(&$element, $group_names) {
+  foreach ($group_names as $group_name) {
+    if (isset($element['#fieldgroups'][$group_name]) && isset($element['#group_children'])) {
+      // Hide the field group.
+      $element['#fieldgroups'][$group_name]->format_type = 'hidden';
+      // Hide the elements inside the field group.
+      $sub_groups = array();
+      foreach (array_keys($element['#group_children'], $group_name) as $field_name) {
+        if (isset($element['#fieldgroups'][$field_name])) {
+          $sub_groups[] = $field_name;
+        } else {
+          $element[$field_name]['#access'] = FALSE;
+        }
+      }
+      _field_group_ajaxified_multipage_hide_field_groups($element, $sub_groups);
+    }
+  }
+}
+
+/**
  * Helper function to recursively go though and unset field_group elements.
  *
  * Also their fields when they aren't visible to the current step.
@@ -528,7 +555,7 @@ function _field_group_ajaxified_multipage_field_unset($children, &$form) {
       _field_group_ajaxified_multipage_field_unset(
         $form['#fieldgroups'][$child_name]->children, $form);
 
-      field_group_hide_field_groups($form, [
+      _field_group_ajaxified_multipage_hide_field_groups($form, [
         $child_name,
       ]);
 
