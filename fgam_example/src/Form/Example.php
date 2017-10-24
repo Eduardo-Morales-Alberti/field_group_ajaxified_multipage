@@ -110,22 +110,11 @@ class Example extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function validateForm(array &$form, FormStateInterface $form_state) {
-    parent::validateForm($form, $form_state);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    // If (isset($form_state['values'])) {.
     if (!is_null($form_state->getValues())) {
-      // $values = $form_state['values'];.
       $values = $form_state->getValues();
       if (!is_null($form_state->get('field_group_ajaxified_multipage_enabled'))) {
-        // If (isset($form_state['field_group_ajaxified_multipage_enabled']) && isset($form_state['storage']['all']['values'])) {.
         if (!is_null($form_state->get('field_group_ajaxified_multipage_enabled')) && !is_null($form_state->get('all')['values'])) {
-          // $values = $form_state['storage']['all']['values'];.
           $values = $form_state->get('all')['values'];
         }
       }
