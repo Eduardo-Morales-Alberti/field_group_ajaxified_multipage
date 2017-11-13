@@ -320,7 +320,7 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
 
     // Scroll to top.
     if ($scroll_top) {
-      $form['#attached']['js'][] = drupal_get_path('module', 'field_group_ajaxified_multipage') . '/js/field_group_ajaxified_multipage.js';
+      $form['#attached']['library'][] = 'field_group_ajaxified_multipage/field_group_ajaxified_multipage';
     }
 
     // Allow thirdparty modules to alter the altered form array.
