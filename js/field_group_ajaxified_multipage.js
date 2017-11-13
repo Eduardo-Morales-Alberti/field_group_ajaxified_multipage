@@ -1,8 +1,3 @@
-/**
- * @file
- * field_group_ajaxified_multipage.js
- */
-
 (function ($, Drupal) {
   /**
    * Scroll to top.
