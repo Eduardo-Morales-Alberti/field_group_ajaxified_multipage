@@ -99,7 +99,6 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
               }
             }
           }
-
           // Scroll Top.
           if (isset($_group['format_settings']['scroll_top'])) {
             if ($_group['format_settings']['scroll_top'] == 1) {
@@ -146,6 +145,9 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
 
     }
 
+    $step = empty($form_state->get('field_group_ajaxified_multipage_step')) ? 1 : $form_state->get('field_group_ajaxified_multipage_step');
+    $form_state->set('field_group_ajaxified_multipage_step', $step);
+
     uasort($form['#fieldgroups'], '__field_group_ajaxified_multipage_groups_by_weight');
     usort($page_group['children'], '__field_group_ajaxified_multipage_groups_by_weight');
     if (!empty($page_group['name'])) {
@@ -157,11 +159,21 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
     if (isset($form['#id'])) {
       $wrapper_id = $form['#id'] . '-' . $wrapper_id;
     }
-    $form['#prefix'] = '<div id="' . $wrapper_id . '">';
+
+    $form['#prefix'] = '<div id="' . $wrapper_id . '" >';
     $form['#suffix'] = '</div>';
 
-    $step = empty($form_state->get('field_group_ajaxified_multipage_step')) ? 1 : $form_state->get('field_group_ajaxified_multipage_step');
-    $form_state->set('field_group_ajaxified_multipage_step', $step);
+    if ($scroll_top) {
+      $form['#attached']['library'][] = 'field_group_ajaxified_multipage/field_group_ajaxified_multipage';
+      $form['#attributes']['class'][] = 'field-group-ajaxifield-multipage-scroll';
+    }
+    if ($step == 1 && (empty($form_state->get('field_group_ajaxified_multipage_scroll')) && !$form_state->get('field_group_ajaxified_multipage_scroll'))) {
+      $form['#attributes']['class'][] = 'prevent-scroll';
+    }
+    if ($step > 1 || (!empty($form_state->get('field_group_ajaxified_multipage_scroll')) && $form_state->get('field_group_ajaxified_multipage_scroll'))) {
+      $scroll = empty($form_state->get('field_group_ajaxified_multipage_scroll')) ? 1 : $form_state->get('field_group_ajaxified_multipage_scroll');
+      $form_state->set('field_group_ajaxified_multipage_scroll', $scroll);
+    }
 
     // Convert page group formats to fieldset.
     $form_state->set('field_group_ajaxified_multipage_complete_form', $form);
@@ -316,11 +328,6 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
     }
     if ($form_state->getFormObject() instanceof EntityForm) {
       $n = $form_state->getFormObject()->getEntity();
-    }
-
-    // Scroll to top.
-    if ($scroll_top) {
-      $form['#attached']['library'][] = 'field_group_ajaxified_multipage/field_group_ajaxified_multipage';
     }
 
     // Allow thirdparty modules to alter the altered form array.
