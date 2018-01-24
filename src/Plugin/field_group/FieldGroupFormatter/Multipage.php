@@ -27,7 +27,7 @@ class Multipage extends FieldGroupFormatterBase {
 
     $element += [
       '#type' => 'multipage',
-      '#title' => Html::escape($this->t($this->getLabel())),
+      '#title' => Html::escape($this->t('@label', ['@label' => $this->getLabel()])),
       '#pre_render' => [],
       '#attributes' => [],
     ];

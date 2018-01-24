@@ -94,8 +94,8 @@ function field_group_ajaxified_multipage_form_alter(&$form, &$form_state, $form_
             // Button labels.
             if (isset($_group['format_settings']['button_label'])) {
               if ($_group['format_settings']['button_label'] == 1) {
-                $button_label_next = t($_group['format_settings']['button_label_next']);
-                $button_label_prev = t($_group['format_settings']['button_label_prev']);
+                $button_label_next = t('@label', ['@label' => $_group['format_settings']['button_label_next']]);
+                $button_label_prev = t('@label', ['@label' => $_group['format_settings']['button_label_prev']]);
               }
             }
           }
