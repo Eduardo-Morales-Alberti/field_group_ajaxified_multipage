@@ -2,7 +2,7 @@ DESCRIPTION
 ============
 
 By using Field Group it's possible to easily turn an entity form into a multipage form, however
-The paging is can only be done on client side which has several disadvantages
+The paging is can only be done on client side which has several disadvantages.
 1. Validation of form fields is very basic, real validation is done after the form is submitted
    and often user will have to return to previous pages to correct the entered values
 2. More complex multi page forms often dynamically change what user see in next steps depending on the
@@ -26,7 +26,7 @@ INSTALLATION
 API
 ============
 There is a similar hook like hook_form_alter that works the same way, it allows other modules to alter
-the forms that are altered by this module. note that it gets called only when the form is mulipaged using this module
+the forms that are altered by this module. Note that it gets called only when the form is multipaged using this module
 
   hook_field_group_ajaxified_multipage_form_alter();
   hook_field_group_ajaxified_multipage_form_BASE_FORM_ID_alter();
@@ -48,7 +48,7 @@ USAGE
   remember that the ajaxify should be disabled for this to work
 - Skip button : You can add skip button for any of the steps you like, simply clone the next button added by this module and change it's title to t('Skip this step')
 
-If you're a developer and like to implement more complex multi page forms you can use the following
+If you're a developer and like to implement more complex multi-page forms you can use the following
 variables
  - $form_state['field_group_ajaxified_multipage_enabled']
  - $form_state['field_group_ajaxified_multipage_group']
@@ -61,7 +61,7 @@ function hook_form_alter(&$form, &$form_state, $form_id) {
     $step = empty($form_state['storage']['field_group_ajaxified_multipage_step']) ? 1 : $form_state['storage']['field_group_ajaxified_multipage_step'];
     $page_group = $form_state['field_group_ajaxified_multipage_group'];
 
-    //Best practive for accessing variables, it works even when this ajax grouping is disabled
+    //Best practice for accessing variables, it works even when this ajax grouping is disabled
     if (isset($form_state['values'])) {
       $values = $form_state['values'];
       if (isset($form_state['field_group_ajaxified_multipage_enabled']) && isset($form_state['storage']['all']['values'])) {
@@ -131,10 +131,11 @@ function myform() {
 
 USAGE
 ============
-FORM API image buttons are not supported by diffault.
+FORM API image buttons are not supported by deffault.
 
 DEVELOPERS
 ===========
 
 Sina Salek (http://sina.salek.ws)
 Sebastian Gurlt (https://www.drupal.org/u/sg88)
+Eduardo Morales (https://www.drupal.org/u/eduardomadrid)
